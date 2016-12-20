@@ -2,11 +2,11 @@
 #define __CONFIG__
 
 //main
-#define BLOCK_SIZE 4
-#define TILE 32
-#define SIDE 8
-#define BLOCK_X 5
-#define BLOCK_Y 6
+#define BLOCK_SIZE 8
+#define TILE 8
+#define SIDE 4
+#define BLOCK_X 4
+#define BLOCK_Y 2
 //test
 
 #endif

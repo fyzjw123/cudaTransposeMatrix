@@ -8,7 +8,7 @@ __global__ void matrixTransposeUnloop(const int * d_a, int * d_b, const int rows
 
     for (int k = 0; k < TILE; k += SIDE) {
         if (x < rows && y + k < cols)
-            mat[threadIdx.y + k][threadIdx.x] = d_a[((y + k) * rows) + x];
+            mat[threadIdx.y + k][threadIdx.x] = d_a[(y + k) * cols + x];
     }
 
     __syncthreads();
@@ -18,7 +18,7 @@ __global__ void matrixTransposeUnloop(const int * d_a, int * d_b, const int rows
 
     for (int k = 0; k < TILE; k += SIDE) {
         if (x < cols && y + k < rows) {
-            d_b[(y + k) * cols + x] = mat[threadIdx.x][threadIdx.y + k];
+            d_b[(y + k) * rows + x] = mat[threadIdx.x][threadIdx.y + k];
         }
     }
 }

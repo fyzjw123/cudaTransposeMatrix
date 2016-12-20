@@ -25,5 +25,4 @@ bin/MatrixTransposeUnloop.o : src/MatrixTransposeUnloop.cu h/MatrixTransposeUnlo
 	nvcc -c $(options) src/MatrixTransposeUnloop.cu -o bin/MatrixTransposeUnloop.o
 
 clear :
-	@echo "removing all the file in bin/"
 	@rm -f bin/*

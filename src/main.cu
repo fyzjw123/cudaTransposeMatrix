@@ -20,7 +20,7 @@ void transpose1();
 void transpose2();
 void transpose3();
 void transpose4();
-void testFunc(transFunc fun);
+void testFunc(transFunc fun, bool);
 
 int main(int argc, char * argv[]) {
 
@@ -96,27 +96,27 @@ void transpose0() {
 }
 void transpose1() {
     transFunc fun = &naiveGPUTranspose;
-    testFunc(fun);
+    testFunc(fun, false);
 }
 
 void transpose2() {
     transFunc fun = &matrixTransposeShared;
-    testFunc(fun);
+    testFunc(fun, false);
 }
 void transpose3() {
     transFunc fun = &matrixTransposeSolveBankConflicts;
-    testFunc(fun);
+    testFunc(fun, false);
 }
 void transpose4() {
     transFunc fun = &matrixTransposeUnloop;
-    testFunc(fun);
+    testFunc(fun, true);
 }
-void testFunc(transFunc fun) {
+void testFunc(transFunc fun, bool flag) {
 
     int values = 0;
     int *source, *dest;
     int *d_source, *d_dest;
-    int size = row * column * sizeof(int);
+    size_t size = row * column * sizeof(int);
 
     source = (int *)malloc(size);
     dest = (int *)malloc(size);
@@ -124,7 +124,7 @@ void testFunc(transFunc fun) {
     cudaMalloc((void **)&d_source, size);
     cudaMalloc((void **)&d_dest, size);
 
-    for (int i=0; i < row; ++i) {
+    for (int i = 0; i < row; ++i) {
         for (int j = 0; j < column; ++j) {
             source[i*column+j] = values;
             values++;
@@ -133,9 +133,16 @@ void testFunc(transFunc fun) {
 
     cudaMemcpy(d_source, source, size, cudaMemcpyHostToDevice);
 
-    dim3 threadPerBlock(threadx, thready);
-    dim3 numBlocks(blockx, blocky);
-    fun<<<numBlocks, threadPerBlock>>>(d_source, d_dest, row, column);
+    if (!flag) {
+        dim3 threadPerBlock(threadx, thready);
+        dim3 numBlocks(blockx, blocky);
+        fun<<<numBlocks, threadPerBlock>>>(d_source, d_dest, row, column);
+    }
+    else {
+        dim3 threadPerBlock(TILE, SIDE);
+        dim3 numBlocks(blockx, blocky);
+        fun<<<numBlocks, threadPerBlock>>>(d_source, d_dest, row, column);
+    }
 
     cudaMemcpy(dest, d_dest, size, cudaMemcpyDeviceToHost);
 
