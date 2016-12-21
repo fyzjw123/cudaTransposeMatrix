@@ -3,6 +3,7 @@
 #include <malloc.h>
 #include <time.h>
 #include <assert.h>
+#include <iomanip>
 #include "config.h"
 #include "simpleImp.h"
 #include "NaiveGPUTranspose.h"
@@ -24,32 +25,28 @@ float transpose3();
 float transpose4();
 float testFunc(transFunc fun, bool);
 float countBandWidth(float);
+void statistics(float t0, float t1, float t2, float t3, float t4);
 
 int main(int argc, char * argv[]) {
     float t0 = transpose0();
-    float bandwidth0 = countBandWidth(t0);
-    cout<<"CPU used: "<<t0<<"ms."<<endl;
-    cout<<bandwidth0<<endl;
+    cout<<setiosflags(ios::left)<<setw(30)<<"CPU Test"<<"[OK]"<<endl;
 
-    t0 = transpose1();
-    bandwidth0 = countBandWidth(t0);
-    cout<<"CPU used: "<<t0<<"ms."<<endl;
-    cout<<bandwidth0<<endl;
+    float t1 = transpose1();
+    cout<<setiosflags(ios::left)<<setw(30)<<"Naive Transpose Test"<<"[OK]"<<endl;
 
-    t0 = transpose2();
-    bandwidth0 = countBandWidth(t0);
-    cout<<"CPU used: "<<t0<<"ms."<<endl;
-    cout<<bandwidth0<<endl;
+    float t2 = transpose2();
+    cout<<setiosflags(ios::left)<<setw(30)<<"Coalesced Memory Test"<<"[OK]"<<endl;
 
-    t0 = transpose3();
-    bandwidth0 = countBandWidth(t0);
-    cout<<"CPU used: "<<t0<<"ms."<<endl;
-    cout<<bandwidth0<<endl;
+    float t3 = transpose3();
+    cout<<setiosflags(ios::left)<<setw(30)<<"Bank Conflicts Test"<<"[OK]"<<endl;
 
-    t0 = transpose4();
-    bandwidth0 = countBandWidth(t0);
-    cout<<"CPU used: "<<t0<<"ms."<<endl;
-    cout<<bandwidth0<<endl;
+    float t4 = transpose4();
+    cout<<setiosflags(ios::left)<<setw(30)<<"Loop Unrolling Test"<<"[OK]"<<endl;
+
+    cout<<endl;
+
+    statistics(t0, t1, t2, t3, t4);
+
     return 0;
 }
 
@@ -169,6 +166,13 @@ float testFunc(transFunc fun, bool flag) {
 
     cudaMemcpy(dest, d_dest, size, cudaMemcpyDeviceToHost);
 
+    //verify
+    for (int i = 0; i < row; ++i) {
+        for (int j = 0; j < column; ++j) {
+            assert(source[i*column+j] == dest[j*row+i]);
+        }
+    }
+
     cudaFree(d_source);
     cudaFree(d_dest);
     free(source);
@@ -181,4 +185,41 @@ float countBandWidth(float elapsedTime) {
     float bandwidth = (BLOCK_SIZE * BLOCK_Y * BLOCK_SIZE * BLOCK_X * sizeof(int) * 2)
         / (elapsedTime/1000 * 1024 * 1024 * 1024);
     return bandwidth;
+}
+
+void statistics(float t0, float t1, float t2, float t3, float t4) {
+
+    float bandwidth0 = countBandWidth(t0);
+    float bandwidth1 = countBandWidth(t1);
+    float bandwidth2 = countBandWidth(t2);
+    float bandwidth3 = countBandWidth(t3);
+    float bandwidth4 = countBandWidth(t4);
+
+    float ssu1 = bandwidth1 / bandwidth0;
+    float ssu2 = bandwidth2 / bandwidth1;
+    float ssu3 = bandwidth3 / bandwidth2;
+    float ssu4 = bandwidth4 / bandwidth3;
+
+    float suvc1 = bandwidth1 / bandwidth0;
+    float suvc2 = bandwidth2 / bandwidth0;
+    float suvc3 = bandwidth3 / bandwidth0;
+    float suvc4 = bandwidth4 / bandwidth0;
+
+    //print Message
+    cout<<setiosflags(ios::left)<<setw(30)<<""<<setw(30)<<"Time(ms)"<<setw(30)<<"Bandwidth(GB/s)"
+        <<setw(30)<<"Step SpeedUp"<<setw(30)<<"Speed Up vs CPU"<<endl;
+    for (int i = 0;i<135;++i) {
+        cout<<"-";
+    }
+    cout<<endl;
+    cout<<setiosflags(ios::left)<<setw(30)<<"CPU"<<setw(30)<<t0<<setw(30)<<bandwidth0<<endl;
+    cout<<endl;
+    cout<<setiosflags(ios::left)<<setw(30)<<"Naive Transpose"<<setw(30)<<t1<<setw(30)<<bandwidth1
+        <<setw(30)<<ssu1<<setw(30)<<suvc1<<endl;
+    cout<<setiosflags(ios::left)<<setw(30)<<"Coalesced Memory"<<setw(30)<<t2<<setw(30)<<bandwidth2
+        <<setw(30)<<ssu2<<setw(30)<<suvc2<<endl;
+    cout<<setiosflags(ios::left)<<setw(30)<<"Bank Conflicts"<<setw(30)<<t3<<setw(30)<<bandwidth3
+        <<setw(30)<<ssu3<<setw(30)<<suvc3<<endl;
+    cout<<setiosflags(ios::left)<<setw(30)<<"Loop Unrolling"<<setw(30)<<t4<<setw(30)<<bandwidth4
+        <<setw(30)<<ssu4<<setw(30)<<suvc4<<endl;
 }

@@ -34,5 +34,7 @@ test :
 	@nvcc -c $(options) src/test.cu -o bin/test.o
 	@nvcc $(options) $(test_objects) -o bin/test
 	@echo "Start test..."
+	@echo "*********************************************"
 	@bin/test
+	@echo "*********************************************"
 	@echo "Finish."
